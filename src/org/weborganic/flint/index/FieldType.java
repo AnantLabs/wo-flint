@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.index;
 
@@ -14,22 +15,20 @@ package org.weborganic.flint.index;
  * @version 9 August 2004
  * @author  Christophe Lauret
  */
-public final class FieldType {
-
-  // TODO: use enum
+public enum FieldType {
 
   /**
    * Used for Lucene keywords.
    *
    * <p>Keywords are not tokenised by the indexed and are stored as is
-   * by the indexer. The value of this type of field cannot be searched 
+   * by the indexer. The value of this type of field cannot be searched
    * using full-text, but a search based on the exact value of this field
    * can be performed.
    *
-   * <p>A <code>KEYWORD</code> field is appropriate for an enumerated type of 
+   * <p>A <code>KEYWORD</code> field is appropriate for an enumerated type of
    * values, such as mime type, type of document, etc...
    */
-  public static final FieldType KEYWORD = new FieldType("keyword");
+  KEYWORD("keyword"),
 
   /**
    * Used for Lucene unindexed fields.
@@ -38,10 +37,10 @@ public final class FieldType {
    * are not tokenised into words. The value can retrieved for the documents
    * in the results, but cannot be searched.
    *
-   * <p>An <code>UNINDEXED</code> field is appropriate for values associated to 
+   * <p>An <code>UNINDEXED</code> field is appropriate for values associated to
    * the document but that need not be searched, such as URLs, file size, etc...
    */
-  public static final FieldType UNINDEXED = new FieldType("unindexed");
+  UNINDEXED("unindexed"),
 
   /**
    * Used for Lucene text fields.
@@ -57,7 +56,7 @@ public final class FieldType {
    * unless the entire value of this field is required it is better to use the
    * <code>UNSTORED</code> field which does not take as much space.
    */
-  public static final FieldType TEXT = new FieldType("text");
+  TEXT("text"),
 
   /**
    * Used for Lucene text fields that aren't stored.
@@ -69,17 +68,17 @@ public final class FieldType {
    * <p>An <code>UNSTORED</code> field is appropriate for text that need to
    * be indexed and full-text searched.
    */
-  public static final FieldType UNSTORED = new FieldType("unstored");
+  UNSTORED("unstored"),
 
   /**
-   * Specific PageSeeder field which is not added to the index
+   * Specific PageSeeder field which is not added to the index.
    */
-  public static final FieldType SYSTEM = new FieldType("system");
+  SYSTEM("system");
 
   /**
-   * The string name of the FieldType
+   * The string name of the FieldType.
    */
-  public final String type;
+  private final String _type;
 
   /**
    * Protect constructor, prevent creation of other instances.
@@ -87,11 +86,11 @@ public final class FieldType {
    * @param type The type for field.
    */
   private FieldType(String type) {
-    this.type = type;
+    this._type = type;
   }
 
   /**
-   * Parse a type of field and return the correponding constant.
+   * Parse a type of field and return the corresponding constant.
    *
    * <p>This method returns:
    * <ul>
@@ -111,9 +110,9 @@ public final class FieldType {
     else if ("keyword".equalsIgnoreCase(name))   return KEYWORD;
     else if ("unindexed".equalsIgnoreCase(name)) return UNINDEXED;
     else if ("text".equalsIgnoreCase(name))      return TEXT;
-    else if ("stored".equalsIgnoreCase(name))      return TEXT;
+    else if ("stored".equalsIgnoreCase(name))    return TEXT;
     else if ("unstored".equalsIgnoreCase(name))  return UNSTORED;
-    else if ("system".equalsIgnoreCase(name))  return SYSTEM;
+    else if ("system".equalsIgnoreCase(name))    return SYSTEM;
     else return KEYWORD;
   }
 
@@ -122,8 +121,9 @@ public final class FieldType {
    *
    * @return "keyword", "text", "unindexed" or "unstored".
    */
+  @Override
   public String toString() {
-    return this.type;
+    return this._type;
   }
 
 }
