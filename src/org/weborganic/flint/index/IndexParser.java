@@ -2,7 +2,7 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.index;
@@ -31,26 +31,26 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * <p>For example:
  *
- * <pre>
- * &lt;document&gt;
- *   &lt;field name="modified" store="yes" index="yes" parse-date-as="MMM dd, yy" resolution="day"&gt;Jan 12, 02&lt;/field&gt;
- *   &lt;field name="path"     store="yes" index="no" &gt;C:\documents\00023.xml&lt;/field&gt;
- *   &lt;field name="webpath"  store="yes" index="no" &gt;/documents/doc-23.xml&lt;/field&gt;
- *   &lt;field name="text" store="compress" index="tokenised" &gt;
- *     Truly to speak, and with no addition, 
- *     We go to gain a little patch of ground 
- *     That hath in it no profit but the name. 
- *     To pay five ducats, five, I would not farm it; 
- *     Nor will it yield to Norway or the Pole 
+ * <pre>{@code
+ * <document>
+ *   <field name="modified" store="yes" index="yes" parse-date-as="MMM dd, yy" resolution="day">Jan 12, 02</field>
+ *   <field name="path"     store="yes" index="no" >C:\documents\00023.xml</field>
+ *   <field name="webpath"  store="yes" index="no" >/documents/doc-23.xml</field>
+ *   <field name="text" store="compress" index="tokenised" >
+ *     Truly to speak, and with no addition,
+ *     We go to gain a little patch of ground
+ *     That hath in it no profit but the name.
+ *     To pay five ducats, five, I would not farm it;
+ *     Nor will it yield to Norway or the Pole
  *     A ranker rate, should it be sold in fee.
- *   &lt;/field&gt;
- * &lt;/document&gt;
- * </pre>
- * 
+ *   </field>
+ * </document>
+ * }</pre>
+ *
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
  *
- * @author  Christophe Lauret (WebOrganic)
+ * @author Christophe Lauret (Weborganic)
  *
  * @version 1 March 2010
  */
@@ -65,7 +65,6 @@ public final class IndexParser {
    * Creates a new IndexParser.
    *
    * @param reader    The XML reader to use.
-   * @param contentId The content id.
    */
   protected IndexParser(XMLReader reader) {
     this._reader = reader;
@@ -77,9 +76,9 @@ public final class IndexParser {
 
   /**
    * Returns the Lucene2 Field Store from the attribute value.
-   * 
-   * @param store The store flag as a string. 
-   * 
+   *
+   * @param store The store flag as a string.
+   *
    * @return The corresponding Lucene2 constant.
    */
   public static Field.Store toFieldStore(String store) {
@@ -88,10 +87,10 @@ public final class IndexParser {
 
   /**
    * Returns the Lucene2 Field Index from the attribute value.
-   * 
-   * @param index The index flag as a string. 
-   * 
-   * @return The corresponding Lucene2 constant. 
+   *
+   * @param index The index flag as a string.
+   *
+   * @return The corresponding Lucene2 constant.
    */
   public static Field.Index toFieldIndex(String index) {
     return FieldBuilder.toFieldIndex(index);
@@ -101,7 +100,7 @@ public final class IndexParser {
    * Make a collection Lucene documents to be indexed from the XML file given.
    *
    * <p>The XML file must conform to the DTD defined in this class.
-   * 
+   *
    * <p>Ensure that the reader uses the correct encoding.
    *
    * @param source The source to read.
@@ -151,7 +150,7 @@ public final class IndexParser {
 
   /**
    * A content handler to determine the version used.
-   * 
+   *
    * @author Christophe Lauret
    * @version 1 March 2010
    */
@@ -169,7 +168,7 @@ public final class IndexParser {
 
     /**
      * Create a new auto handler for the specified XML reader.
-     * 
+     *
      * @param reader   The XML Reader in use.
      */
     public AutoHandler(XMLReader reader) {
@@ -178,27 +177,23 @@ public final class IndexParser {
 
     /**
      * Once element "documents" is matched, the reader is assigned the appropriate handler.
-     * 
+     *
      * {@inheritDoc}
      */
     @Override
     public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
       if ("documents".equals(qName) || "documents".equals(localName)) {
         String version = atts.getValue("version");
-
         // Version 2.0
         if ("2.0".equals(version)) {
           this._handler = new IndexDocumentHandler_2_0();
-
         // Assume version 1.0
         } else {
           this._handler = new IndexDocumentHandler_1_0();
         }
-
         // Start processing the document with the new handler
         this._handler.startDocument();
         this._handler.startElement(uri, localName, qName, atts);
-
         // Reassign the content handler
         this._reader.setContentHandler(this._handler);
       }
@@ -207,10 +202,11 @@ public final class IndexParser {
     /**
      * {@inheritDoc}
      */
+    @Override
     public List<Document> getDocuments() {
       if (this._handler == null) return Collections.emptyList();
       return this._handler.getDocuments();
     }
   }
-  
+
 }

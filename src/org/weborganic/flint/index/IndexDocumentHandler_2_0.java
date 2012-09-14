@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.index;
 
 import java.text.DateFormat;
@@ -8,10 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -20,9 +28,9 @@ import org.xml.sax.helpers.DefaultHandler;
  * The handler for the Flint Index Documents format version 2.
  *
  * @see <a href="http://weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
- * 
+ *
  * @author Christophe Lauret
- * @version 2 March 2010
+ * @version 10 September 2010
  */
 final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocumentHandler {
 
@@ -34,10 +42,15 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexDocumentHandler_2_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_2_0.class);
 
   // class attributes
   // -------------------------------------------------------------------------------------------
+
+  /**
+   * The time zone to use when parsing dates.
+   */
+  private TimeZone _timezone = TimeZone.getDefault();
 
   /**
    * Date parser instances.
@@ -68,9 +81,9 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   private boolean _isCompressed;
 
   /**
-   * The field builder. 
+   * The field builder.
    */
-  private FieldBuilder builder = new FieldBuilder(); 
+  private FieldBuilder builder = new FieldBuilder();
 
   /**
    * The characters found within a field.
@@ -83,6 +96,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public List<Document> getDocuments() {
     return this.documents;
   }
@@ -93,6 +107,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void startDocument() {
     LOGGER.debug("Start processing iXML document (version 2.0)");
     this.documents = new ArrayList<Document>();
@@ -101,6 +116,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void endDocument() {
     LOGGER.debug("End processing iXML document");
   }
@@ -108,17 +124,21 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes) {
     if ("field".equals(qName)) {
       startFieldElement(attributes);
     } else if ("document".equals(qName)) {
       startDocumentElement(attributes);
+    } else if ("documents".equals(qName)) {
+      startDocumentsElement(attributes);
     }
   }
 
   /**
    * {@inheritDoc}
    */
+  @Override
   public void endElement(String uri, String localName, String qName) {
     if ("field".equals(qName)) {
       endFieldElement();
@@ -138,6 +158,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    *
    * @throws SAXException Any SAX exception, possibly wrapping another exception.
    */
+  @Override
   public void characters(char[] ch, int start, int length) throws SAXException {
     if (this._isField) {
       for (int i = start; i < (length+start); i++) {
@@ -150,14 +171,29 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   // -------------------------------------------------------------------------------------------
 
   /**
-   * Handles the start of a 'document' element.
-   * 
+   * Handles the start of a 'documents' element.
+   *
    * @param atts The attributes to handles.
    */
+  private void startDocumentsElement(Attributes atts) {
+    LOGGER.debug("Parsing index document set");
+    String timezone = atts.getValue("timezone");
+    if (timezone != null) {
+      LOGGER.debug("Setting timezone to");
+      this._timezone = TimeZone.getTimeZone(timezone);
+    } else {
+      this._timezone = GMT;
+    }
+  }
+
+  /**
+   * Handles the start of a 'document' element.
+   *
+   * @param atts The attributes to handle.
+   */
   private void startDocumentElement(Attributes atts) {
-    LOGGER.debug("Parsing new index document");
+    LOGGER.debug("Parsing index document");
     this._document = new Document();
-//    this._document.add(new Field(IndexManager.CONTENT_ID_FIELD, this.contentID, Store.YES, Index.NOT_ANALYZED));
   }
 
   /**
@@ -165,7 +201,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    */
   private void endDocumentElement() {
     LOGGER.debug("Storing document");
-    if (this._document.getFields().size() == 1) {
+    if (this._document.getFields().isEmpty()) {
       LOGGER.warn("This document is empty - will not be stored");
     } else {
       this.documents.add(this._document);
@@ -175,7 +211,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Handles the start of a new 'field' element
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
@@ -195,6 +231,11 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
     this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
     this.builder.resolution(atts.getValue("date-resolution"));
     // Set attributes ready for recording content
+    String type = atts.getValue("numeric-type");
+    if (type != null) {
+      this.builder.numeric(type);
+      this.builder.precisionStep(atts.getValue("precision-step"));
+    }
     this._isField = true;
   }
 
@@ -203,7 +244,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    */
   private void endFieldElement() {
     try {
-      // set the value 
+      // set the value
       this.builder.value(this._value.toString());
 
       // compressed field
@@ -233,12 +274,15 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   }
 
   /**
-   * Returns the date format to use, allowing recycling. 
+   * Returns the date format to use, allowing recycling.
    *
    * <p>Set the current date format to <code>null<code> if the format is <code>null</code>.
    *
    * <p>Otherwise retrieve from map or create an instance if it has never been created.
-   * 
+   *
+   * <p>Note: we only set the timezone if the date format includes a time component; otherwise we default to GMT to
+   * ensure that Lucene will preserve the date.
+   *
    * @param format The date format used.
    * @return the corresponding date format or <code>null</code>.
    */
@@ -249,9 +293,13 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
     if (df == null) {
       try {
         df = new SimpleDateFormat(format);
-        df.setTimeZone(GMT);
+        if (includesTime(format)) {
+          df.setTimeZone(this._timezone);
+        } else {
+          df.setTimeZone(GMT);
+        }
         this.dfs.put(format, df);
-      } catch (Exception ex) {
+      } catch (IllegalArgumentException ex) {
         LOGGER.warn("Ignoring unusable date format '"+format+"'", ex);
       }
     }
@@ -271,6 +319,26 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
       case '\t' : return ' ';
       default: return c;
     }
+  }
+
+  /**
+   * Indicates whether the format includes a time component.
+   *
+   * @param format The date format
+   * @return <code>true</code> if it includes a time component;
+   *         <code>false</code> otherwise.
+   */
+  private static boolean includesTime(String format) {
+    if (format.indexOf('H') >= 0) return true; // Hour in day (0-23)
+    else if (format.indexOf('k') >= 0) return true; // Hour in day (1-24)
+    else if (format.indexOf('K') >= 0) return true; // Hour in am/pm (0-11)
+    else if (format.indexOf('h') >= 0) return true; // Hour in am/pm (1-12)
+    else if (format.indexOf('m') >= 0) return true; // Minute in hour
+    else if (format.indexOf('s') >= 0) return true; // Second in minute
+    else if (format.indexOf('S') >= 0) return true; // Millisecond
+    else if (format.indexOf('Z') >= 0) return true; // Time zone
+    else if (format.indexOf('z') >= 0) return true; // Time zone
+    return false;
   }
 
 }

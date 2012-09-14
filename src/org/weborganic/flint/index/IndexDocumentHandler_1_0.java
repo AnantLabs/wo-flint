@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.index;
 
 import java.text.DateFormat;
@@ -8,11 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -21,7 +29,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * The handler for the Flint Index Documents format version 1.
  *
  * @see <a href="http://weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
- * 
+ *
  * @author Christophe Lauret
  * @version 2 March 2010
  */
@@ -35,7 +43,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexDocumentHandler_1_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_1_0.class);
 
   // class attributes
   // -------------------------------------------------------------------------------------------
@@ -69,9 +77,9 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   private boolean _isCompressed;
 
   /**
-   * The field builder. 
+   * The field builder.
    */
-  private FieldBuilder builder = new FieldBuilder(); 
+  private FieldBuilder builder = new FieldBuilder();
 
   /**
    * The characters found within a field.
@@ -84,6 +92,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public List<Document> getDocuments() {
     return this.documents;
   }
@@ -96,6 +105,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    *
    * <p>Initialise this handler.
    */
+  @Override
   public void startDocument() {
     LOGGER.debug("Start processing iXML documents (version 1.0)");
     this.documents = new ArrayList<Document>();
@@ -104,6 +114,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * Receives notification of the end of the document.
    */
+  @Override
   public void endDocument() {
     LOGGER.debug("End processing iXML document");
   }
@@ -111,6 +122,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes) {
     if ("field".equals(qName)) {
       startFieldElement(attributes);
@@ -122,6 +134,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void endElement(String uri, String localName, String qName) {
     if ("field".equals(qName)) {
       endFieldElement();
@@ -143,6 +156,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    *
    * @throws SAXException Any SAX exception, possibly wrapping another exception.
    */
+  @Override
   public void characters(char[] ch, int start, int length) throws SAXException {
     if (this._isField) {
       for (int i = start; i < (length+start); i++) {
@@ -156,7 +170,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Handles the start of a 'document' element.
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startDocumentElement(Attributes atts) {
@@ -170,7 +184,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    */
   private void endDocumentElement() {
     LOGGER.debug("Storing document");
-    if (this._document.getFields().size() == 1) {
+    if (this._document.getFields().isEmpty()) {
       LOGGER.warn("This document is empty - will not be stored");
     } else {
       this.documents.add(this._document);
@@ -180,13 +194,13 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Handles the start of a new 'field' element
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
     this.builder.name(atts.getValue("name"));
     this.builder.index(toFieldIndex(atts.getValue("index")));
-    // handle compression    
+    // handle compression
     if ("compress".equals(atts.getValue("store"))) {
       this._isCompressed = true;
       this.builder.store(Store.NO);
@@ -212,8 +226,6 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
     try {
       // construct the field
       this.builder.value(this._value.toString());
-      Field field = this.builder.build();
-      this._document.add(field);
 
       // compressed field
       if (this._isCompressed) {
@@ -230,9 +242,9 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
       }
 
     } catch (IllegalStateException ex) {
-      LOGGER.warn("Unable to create field: "+this.builder.name(), ex);
+      LOGGER.warn("Unable to create field: {}", this.builder.name(), ex);
     } catch (IllegalArgumentException ex) {
-      LOGGER.warn("Unable to create field: "+this.builder.name(), ex);
+      LOGGER.warn("Unable to create field: {}", this.builder.name(), ex);
     }
     // reset the class attributes involved in this field
     resetField();
@@ -245,8 +257,9 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    *
    * <p>Otherwise retrieve from hashtable or create an instance if it's
    * never been created.
-   * 
+   *
    * @param format The date format used.
+   * @return The corresponding date format instance.
    */
   private DateFormat toDateFormat(String format) {
     if (format == null) return null;
@@ -258,7 +271,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
         df.setTimeZone(GMT);
         this.dfs.put(format, df);
       } catch (Exception ex) {
-        LOGGER.warn("Ignoring unusable date format '"+format+"'", ex);
+        LOGGER.warn("Ignoring unusable date format '{}'", format, ex);
       }
     }
     return df;
@@ -289,7 +302,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Return the field index values handling legacy Lucene 2 values.
-   * 
+   *
    * @param index The field index value.
    * @return the Lucene 3 field index values corresponding to the specified string.
    */
