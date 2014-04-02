@@ -199,9 +199,6 @@ public final class IndexParser {
       }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<Document> getDocuments() {
       if (this._handler == null) return Collections.emptyList();

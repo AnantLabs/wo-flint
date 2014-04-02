@@ -9,8 +9,6 @@ package org.weborganic.flint;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -662,9 +660,10 @@ public final class IndexManager implements Runnable {
   private boolean updateJob(IndexJob job, Content content, IndexIO io) {
     if (job == null || io == null || content == null) return false;
     // translate content
-    StringWriter xsltResult = new StringWriter();
+    AdaptiveReaderWriter buffer = new AdaptiveReaderWriter();
+    Writer ixml = buffer.getWriter();
     try {
-      translateContent(new FlintErrorListener(this._listener, job), job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
+      translateContent(new FlintErrorListener(this._listener, job), job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), ixml);
     } catch (IndexException ex) {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
@@ -673,12 +672,13 @@ public final class IndexManager implements Runnable {
     List<Document> documents;
     try {
       IndexParser parser = IndexParserFactory.getInstance();
-      documents = parser.process(new InputSource(new StringReader(xsltResult.toString())));
+      documents = parser.process(new InputSource(buffer.getReader()));
     } catch (Exception ex) {
       this._listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
       return false;
     }
     try {
+      buffer.cleanup();
       // add docs to index index
       io.updateDocuments(content.getDeleteRule(), documents);
     } catch (Exception ex) {
