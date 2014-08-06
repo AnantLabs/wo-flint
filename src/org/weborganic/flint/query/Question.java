@@ -131,11 +131,22 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * <p>This only needs to be done once.
    *
-   * @param analyzer The analyser used by the underlying index.
+   * @param analyzer The analyzer used by the underlying index.
    */
   private void compute(Analyzer analyzer) {
-    // TODO the analyser is ignored (cause problems with STOP words and case sensitivity)
-    compute();
+    List<String> values = Fields.toValues(this._question);
+    BooleanQuery query = new BooleanQuery();
+    for (String value : values) {
+      BooleanQuery sub = new BooleanQuery();
+      for (Entry<String, Float> e : this._fields.entrySet()) {
+        for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, analyzer)) {
+          q.setBoost(e.getValue());
+          sub.add(q, Occur.SHOULD);
+        }
+      }
+      query.add(sub, Occur.SHOULD);
+    }
+    this._query = query;
   }
 
   /**

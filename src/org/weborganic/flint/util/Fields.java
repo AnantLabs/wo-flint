@@ -7,6 +7,8 @@
  */
 package org.weborganic.flint.util;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +17,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.Fieldable;
 import org.slf4j.LoggerFactory;
@@ -105,6 +111,38 @@ public final class Fields {
       values.add(m.group());
     }
     return values;
+  }
+
+  /**
+   * Returns the terms for a field
+   *
+   * @param field    The field
+   * @param text     The text to analyze
+   * @param analyzer The analyzer
+   *
+   * @return the corresponding list of terms produced by the analyzer.
+   *
+   * @throws IOException
+   */
+  public static List<String> toTerms(String field, String text, Analyzer analyzer) {
+    StringReader r = new StringReader(text);
+    TokenStream stream = analyzer.tokenStream(field, r);
+    PositionIncrementAttribute increment = stream.addAttribute(PositionIncrementAttribute.class);
+    TermAttribute attribute = stream.addAttribute(TermAttribute.class);
+    List<String> terms = new ArrayList<String>();
+    try {
+      stream.reset();
+      while (stream.incrementToken()) {
+        String term = attribute.term();
+        terms.add(term);
+        // TODO Use increment for the phrase query
+//        System.err.println(term+":"+increment.getPositionIncrement());
+      }
+    } catch (IOException ex) {
+      // Should not occur since we use a StringReader
+      ex.printStackTrace();
+    }
+    return terms;
   }
 
   /**
