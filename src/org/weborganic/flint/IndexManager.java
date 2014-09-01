@@ -136,6 +136,11 @@ public final class IndexManager implements Runnable {
   private ExecutorService threadPool = null;
 
   /**
+   * Stop flag
+   */
+  private boolean shouldStop = false;
+
+  /**
    * A default Translator, used when no Factory matches a certain MIME Type.
    */
   private ContentTranslator _defaultTranslator = null;
@@ -548,6 +553,7 @@ public final class IndexManager implements Runnable {
    * Kills the thread and close all the indexes.
    */
   public void stop() {
+    this.shouldStop = true;
     // Stop the thread
     this.threadPool.shutdown();
     // Close all indexes
@@ -570,12 +576,13 @@ public final class IndexManager implements Runnable {
     IndexJob job = null;
     boolean started = false;
     // Processed since last batch.
-    while (true) {
+    while (!this.shouldStop) {
       try {
         try {
           job = this._indexQueue.nextJob();
         } catch (InterruptedException ex) {
-          this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
+          if (!this.shouldStop)
+            this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
           // the thread was shutdown, let's die then
           return;
         }
@@ -628,6 +635,7 @@ public final class IndexManager implements Runnable {
             this._listener.endJob(job);
             this._lastActivity.set(System.currentTimeMillis());
           }
+          if (this.shouldStop) return;
         } else {
           // check the number of opened readers then
           OpenIndexManager.closeOldReaders();
@@ -638,12 +646,14 @@ public final class IndexManager implements Runnable {
             started = false;
             this._listener.endBatch();
           }
+          if (this.shouldStop) return;
         }
         // clear the job
         job = null;
       } catch (Throwable ex) {
         this._listener.error(job, "Unexpected general error: " + ex.getMessage(), ex);
       }
+      this.shouldStop = false;
     }
   };
 
