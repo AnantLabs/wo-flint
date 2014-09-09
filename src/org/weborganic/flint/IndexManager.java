@@ -555,7 +555,7 @@ public final class IndexManager implements Runnable {
   public void stop() {
     this.shouldStop = true;
     // Stop the thread
-    this.threadPool.shutdown();
+    this.threadPool.shutdownNow();
     // Close all indexes
     for (Entry<String, IndexIO> e : this._indexes.entrySet()) {
       String id = e.getKey();
