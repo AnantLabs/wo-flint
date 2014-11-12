@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BalancedSegmentMergePolicy;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -79,7 +78,7 @@ final class IndexIOReadWrite extends IndexIO {
    */
   @Override
   protected void maybeReopen() {
-    if (this.state != State.NEEDS_REOPEN) return;
+    if (this.state != State.NEEDS_REOPEN) { return; }
     try {
       LOGGER.debug("Reopen searcher");
       this.searcherManager.maybeReopen();
@@ -101,7 +100,7 @@ final class IndexIOReadWrite extends IndexIO {
    */
   @Override
   public void maybeCommit() throws IndexException {
-    if (this.state != State.NEEDS_COMMIT || this.writer == null) return;
+    if (this.state != State.NEEDS_COMMIT || this.writer == null) { return; }
     try {
       LOGGER.debug("Committing index changes");
       this.writer.commit();
@@ -125,7 +124,7 @@ final class IndexIOReadWrite extends IndexIO {
    */
   @Override
   public void maybeOptimise() throws IndexException {
-    if (this.state != State.NEEDS_OPTIMISE || this.writer == null) return;
+    if (this.state != State.NEEDS_OPTIMISE || this.writer == null) { return; }
     try {
       LOGGER.debug("Optimising");
       this.writer.optimize();
@@ -275,7 +274,7 @@ final class IndexIOReadWrite extends IndexIO {
     // IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30, this._index.getAnalyzer());
     // config.setMergeScheduler(new ConcurrentMergeScheduler());
     // config.setMergePolicy(new BalancedSegmentMergePolicy());
-    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     SerialMergeScheduler sms = new SerialMergeScheduler();
     this.writer.setMergeScheduler(sms);
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
